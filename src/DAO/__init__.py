@@ -60,44 +60,21 @@ def retornar_image_name(image_name):
     img = Image.open(BytesIO(img_data))
 
     return img
-def reconhecerRosto(foto):
+
+def obter_encodings():
     conn = conexaodb()
-
-    face_image = fc.load_image_file(foto)
-    face_encodings = fc.face_encodings(face_image)
-
-    if not face_encodings:
-        print("Nenhum rosto encontrado na imagem fornecida.")
-        return
-
     cur = conn.cursor()
-
-    cur.execute("SELECT id, name, image FROM images")
+    cur.execute("SELECT name, image FROM images")
     imagens = cur.fetchall()
+    cur.close()
+    conn.close()
 
     banco_encodings = {}
-
-    for img in imagens:
-        img_id, img_nome, img_bin = img
-
+    for img_nome, img_bin in imagens:
         img_io = io.BytesIO(img_bin)
         face_unknown = fc.load_image_file(img_io)
         face_unknown_encodings = fc.face_encodings(face_unknown)
-
         if face_unknown_encodings:
             banco_encodings[img_nome] = face_unknown_encodings[0]
 
-    for i, face_encoding in enumerate(face_encodings):
-        encontrado = False
-        for nome, encoding_banco in banco_encodings.items():
-            resultado = fc.compare_faces([encoding_banco], face_encoding)
-
-            if resultado[0]:
-                print(f"Rosto {i + 1}: {nome} está presente na imagem.")
-                encontrado = True
-
-        if not encontrado:
-            print(f"Rosto {i + 1}: Não identificado no banco de dados.")
-
-    cur.close()
-    conn.close()
+    return banco_encodings
